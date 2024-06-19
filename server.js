@@ -2,8 +2,8 @@ import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
 import fetch from "node-fetch";
-import {getProducts, createProduct} from "./products.js";
 import {signup, login, logout} from "./auth.js";
+import supabase from "./supabase.js";
 
 const app = express();
 const port = 3000;
@@ -42,25 +42,35 @@ app.post("/logout", async (req, res) => {
     res.status(400).json({error: error.message});
   }
 });
+
 app.post("/api/transbank/init", async (req, res) => {
-  const {buyOrder, sessionId, amount, returnUrl} = req.body;
-
-  const options = {
-    commerceCode: "597055555532",
-    apiKey: "579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C",
-    environment: "integration",
-  };
-
-  const validatedBuyOrder = buyOrder.slice(0, 20).replace(/[^a-zA-Z0-9]/g, "");
-
-  const data = {
-    buy_order: validatedBuyOrder,
-    session_id: sessionId,
-    amount: amount,
-    return_url: returnUrl,
-  };
-
   try {
+    const {buyOrder, sessionId, amount, returnUrl} = req.body;
+
+    // Validar que todos los campos requeridos estén presentes
+    if (!buyOrder || !sessionId || !amount || !returnUrl) {
+      throw new Error("Todos los campos son requeridos");
+    }
+
+    // Validar y limpiar el campo buyOrder
+    const validatedBuyOrder = buyOrder
+      .slice(0, 20)
+      .replace(/[^a-zA-Z0-9]/g, "");
+
+    const options = {
+      commerceCode: "597055555532",
+      apiKey:
+        "579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C",
+      environment: "integration",
+    };
+
+    const data = {
+      buy_order: validatedBuyOrder,
+      session_id: sessionId,
+      amount: amount,
+      return_url: returnUrl,
+    };
+
     console.log("Iniciando transacción con los siguientes datos:", data);
 
     const response = await fetch(
@@ -94,11 +104,11 @@ app.post("/api/transbank/init", async (req, res) => {
       .json({message: "Error al iniciar la transacción", error: error.message});
   }
 });
-
 // Ruta para obtener todos los productos
 app.get("/products", async (req, res) => {
   try {
-    const products = await getProducts();
+    const {data: products, error} = await supabase.from("products").select("*");
+    if (error) throw error;
     res.status(200).json(products);
   } catch (error) {
     res.status(500).json({error: error.message});
@@ -107,10 +117,14 @@ app.get("/products", async (req, res) => {
 
 // Ruta para crear un nuevo producto
 app.post("/products", async (req, res) => {
-  const newProduct = req.body;
+  const {name, description, price} = req.body;
 
   try {
-    const product = await createProduct(newProduct);
+    const {data: product, error} = await supabase
+      .from("products")
+      .insert([{name, description, price}])
+      .single();
+    if (error) throw error;
     res.status(201).json(product);
   } catch (error) {
     res.status(500).json({error: error.message});

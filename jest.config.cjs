@@ -1,5 +1,3 @@
-// jest.config.cjs
-
 module.exports = {
   testEnvironment: "node",
   clearMocks: true,
@@ -7,4 +5,5 @@ module.exports = {
   transform: {
     "^.+\\.js$": "babel-jest",
   },
+  setupFiles: ["./jest.setup.js"],
 };
