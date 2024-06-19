@@ -117,6 +117,10 @@ app.post("/products", async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Servidor Express escuchando en http://localhost:${port}`);
-});
+if (process.env.NODE_ENV !== "test") {
+  app.listen(port, () => {
+    console.log(`Servidor Express escuchando en http://localhost:${port}`);
+  });
+}
+
+export default app;
