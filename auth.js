@@ -8,6 +8,7 @@ export async function signup({fullName, email, password}) {
       data: {
         fullName,
         avatar: "",
+        discountApplied: true, // Agregar campo para indicar que se aplicó el descuento
       },
     },
   });

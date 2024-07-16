@@ -1,5 +1,8 @@
 import supertest from "supertest";
-import app from "../../server.js";
+import fetchMock from "jest-fetch-mock";
+import app from "../../server";
+
+fetchMock.enableMocks();
 
 describe("Transbank Integration", () => {
   beforeEach(() => {
@@ -53,6 +56,6 @@ describe("Transbank Integration", () => {
       .send(transactionData);
 
     expect(response.status).toBe(500);
-    expect(fetch).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledTimes(0);
   });
 });

@@ -4,6 +4,7 @@ import bodyParser from "body-parser";
 import fetch from "node-fetch";
 import {signup, login, logout} from "./auth.js";
 import supabase from "./supabase.js";
+import {initTransaction, getTransactionStatus} from "./transbank.js";
 
 const app = express();
 const port = 3000;
@@ -42,68 +43,8 @@ app.post("/logout", async (req, res) => {
     res.status(400).json({error: error.message});
   }
 });
-
-app.post("/api/transbank/init", async (req, res) => {
-  try {
-    const {buyOrder, sessionId, amount, returnUrl} = req.body;
-
-    // Validar que todos los campos requeridos estén presentes
-    if (!buyOrder || !sessionId || !amount || !returnUrl) {
-      throw new Error("Todos los campos son requeridos");
-    }
-
-    // Validar y limpiar el campo buyOrder
-    const validatedBuyOrder = buyOrder
-      .slice(0, 20)
-      .replace(/[^a-zA-Z0-9]/g, "");
-
-    const options = {
-      commerceCode: "597055555532",
-      apiKey:
-        "579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C",
-      environment: "integration",
-    };
-
-    const data = {
-      buy_order: validatedBuyOrder,
-      session_id: sessionId,
-      amount: amount,
-      return_url: returnUrl,
-    };
-
-    console.log("Iniciando transacción con los siguientes datos:", data);
-
-    const response = await fetch(
-      "https://webpay3gint.transbank.cl/rswebpaytransaction/api/webpay/v1.2/transactions",
-      {
-        method: "POST",
-        headers: {
-          "Tbk-Api-Key-Id": options.commerceCode,
-          "Tbk-Api-Key-Secret": options.apiKey,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Error en la solicitud: ${response.statusText}`, errorText);
-      throw new Error(
-        `Error en la solicitud: ${response.statusText} - ${errorText}`
-      );
-    }
-
-    const responseData = await response.json();
-    console.log("Respuesta de Transbank:", responseData);
-    res.json(responseData);
-  } catch (error) {
-    console.error("Error al iniciar la transacción:", error);
-    res
-      .status(500)
-      .json({message: "Error al iniciar la transacción", error: error.message});
-  }
-});
+app.post("/api/transbank/init", initTransaction);
+app.post("/api/transbank/status", getTransactionStatus);
 // Ruta para obtener todos los productos
 app.get("/products", async (req, res) => {
   try {
